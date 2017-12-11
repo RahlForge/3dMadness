@@ -11,6 +11,11 @@ namespace _3dMadness
     {
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
+        Camera camera;
+
+        VertexPositionColor[] vertices;
+        VertexBuffer vertexBuffer;
+        BasicEffect effect;
 
         public Game1()
         {
@@ -27,6 +32,20 @@ namespace _3dMadness
         protected override void Initialize()
         {
             // TODO: Add your initialization logic here
+            camera = new Camera(this, new Vector3(0, 0, 5), Vector3.Zero, Vector3.Up);
+            Components.Add(camera);
+
+            // Initialize vertices
+            vertices = new VertexPositionColor[3];
+            vertices[0] = new VertexPositionColor(new Vector3(0, 1, 0), Color.Blue);
+            vertices[1] = new VertexPositionColor(new Vector3(1, -1, 0), Color.Red);
+            vertices[2] = new VertexPositionColor(new Vector3(-1, -1, 0), Color.Green);
+
+            vertexBuffer = new VertexBuffer(GraphicsDevice, typeof(VertexPositionColor),
+                vertices.Length, BufferUsage.None);
+            vertexBuffer.SetData(vertices);
+
+            effect = new BasicEffect(GraphicsDevice);
 
             base.Initialize();
         }
@@ -59,7 +78,8 @@ namespace _3dMadness
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Update(GameTime gameTime)
         {
-            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
+            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || 
+                Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
 
             // TODO: Add your update logic here
@@ -76,6 +96,22 @@ namespace _3dMadness
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
             // TODO: Add your drawing code here
+            GraphicsDevice.SetVertexBuffer(vertexBuffer);
+
+            // Set object and camera info
+            effect.World = Matrix.Identity;
+            effect.View = camera.View;
+            effect.Projection = camera.Projection;
+            effect.VertexColorEnabled = true;
+
+            // Begin effect and draw for each pass
+            foreach (EffectPass pass in effect.CurrentTechnique.Passes)
+            {
+                pass.Apply();
+
+                GraphicsDevice.DrawUserPrimitives<VertexPositionColor>(PrimitiveType.TriangleStrip, 
+                    vertices, 0, 1);
+            }
 
             base.Draw(gameTime);
         }
