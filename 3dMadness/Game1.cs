@@ -13,9 +13,23 @@ namespace _3dMadness
         SpriteBatch spriteBatch;
         Camera camera;
 
-        VertexPositionColor[] vertices;
-        VertexBuffer vertexBuffer;
-        BasicEffect effect;
+        // Cube definition
+        VertexPositionTexture[][] vertices;
+        VertexBuffer[] vertexBuffer;
+        BasicEffect[] effect;
+        Texture2D[] texture;
+
+        Matrix worldRotation;
+        Matrix worldTranslation;
+
+        Vector3 frontTopLeft = new Vector3(-1, 1, 1);
+        Vector3 frontTopRight = new Vector3(1, 1, 1);
+        Vector3 frontBottomLeft = new Vector3(-1, -1, 1);
+        Vector3 frontBottomRight = new Vector3(1, -1, 1);
+        Vector3 backTopLeft = new Vector3(-1, 1, -1);
+        Vector3 backTopRight = new Vector3(1, 1, -1);
+        Vector3 backBottomLeft = new Vector3(-1, -1, -1);
+        Vector3 backBottomRight = new Vector3(1, -1, -1);
 
         public Game1()
         {
@@ -36,16 +50,97 @@ namespace _3dMadness
             Components.Add(camera);
 
             // Initialize vertices
-            vertices = new VertexPositionColor[3];
-            vertices[0] = new VertexPositionColor(new Vector3(0, 1, 0), Color.Blue);
-            vertices[1] = new VertexPositionColor(new Vector3(1, -1, 0), Color.Red);
+            vertices = new VertexPositionTexture[6][];
+            vertexBuffer = new VertexBuffer[6];
+            effect = new BasicEffect[6];
+            texture = new Texture2D[6];
+
+            for (int i = 0; i < 6; i++)
+            { 
+                vertices[i] = new VertexPositionTexture[4];
+
+                switch (i)
+                {
+                    case 0: // Front face vertices                                    
+                        vertices[i][0] = new VertexPositionTexture(frontTopLeft,
+                            new Vector2(0f, 0f));
+                        vertices[i][1] = new VertexPositionTexture(frontTopRight,
+                            new Vector2(1f, 0f));
+                        vertices[i][2] = new VertexPositionTexture(frontBottomLeft,
+                            new Vector2(0f, 1f));
+                        vertices[i][3] = new VertexPositionTexture(frontBottomRight,
+                            new Vector2(1f, 1f));
+                        break;
+                    case 1: // Top face vertices            
+                        vertices[i][0] = new VertexPositionTexture(backTopLeft,
+                            new Vector2(0f, 0f));
+                        vertices[i][1] = new VertexPositionTexture(backTopRight,
+                            new Vector2(1f, 0f));
+                        vertices[i][2] = new VertexPositionTexture(frontTopLeft,
+                            new Vector2(0f, 1f));
+                        vertices[i][3] = new VertexPositionTexture(frontTopRight,
+                            new Vector2(1f, 1f));
+                        break;
+                    case 2: // Back face vertices            
+                        vertices[i][0] = new VertexPositionTexture(backTopRight,
+                            new Vector2(0f, 0f));
+                        vertices[i][1] = new VertexPositionTexture(backTopLeft,
+                            new Vector2(1f, 0f));
+                        vertices[i][2] = new VertexPositionTexture(backBottomRight,
+                            new Vector2(0f, 1f));
+                        vertices[i][3] = new VertexPositionTexture(backBottomLeft,
+                            new Vector2(1f, 1f));
+                        break;
+                    case 3: // Left face vertices            
+                        vertices[i][0] = new VertexPositionTexture(backTopLeft,
+                            new Vector2(0f, 0f));
+                        vertices[i][1] = new VertexPositionTexture(frontTopLeft,
+                            new Vector2(1f, 0f));
+                        vertices[i][2] = new VertexPositionTexture(backBottomLeft,
+                            new Vector2(0f, 1f));
+                        vertices[i][3] = new VertexPositionTexture(frontBottomLeft,
+                            new Vector2(1f, 1f));
+                        break;
+                    case 4: // Bottom face vertices            
+                        vertices[i][0] = new VertexPositionTexture(frontBottomLeft,
+                            new Vector2(0f, 0f));
+                        vertices[i][1] = new VertexPositionTexture(frontBottomRight,
+                            new Vector2(1f, 0f));
+                        vertices[i][2] = new VertexPositionTexture(backBottomLeft,
+                            new Vector2(0f, 1f));
+                        vertices[i][3] = new VertexPositionTexture(backBottomRight,
+                            new Vector2(1f, 1f));
+                        break;
+                    case 5: // Right face vertices            
+                        vertices[i][0] = new VertexPositionTexture(frontTopRight,
+                            new Vector2(0f, 0f));
+                        vertices[i][1] = new VertexPositionTexture(backTopRight,
+                            new Vector2(1f, 0f));
+                        vertices[i][2] = new VertexPositionTexture(frontBottomRight,
+                            new Vector2(0f, 1f));
+                        vertices[i][3] = new VertexPositionTexture(backBottomRight,
+                            new Vector2(1f, 1f));                        
+                        break;
+                }            
+
+                vertexBuffer[i] = new VertexBuffer(GraphicsDevice, typeof(VertexPositionTexture),
+                    vertices[i].Length, BufferUsage.None);
+                vertexBuffer[i].SetData(vertices[i]);
+                effect[i] = new BasicEffect(GraphicsDevice);
+                texture[i] = Content.Load<Texture2D>($@"Textures/trees{i + 1}");
+            }                           
+
+            /* Using VertexPositionColor
+            vertices[0] = new VertexPositionColor(new Vector3(-1, 1, 0), Color.Blue);
+            vertices[1] = new VertexPositionColor(new Vector3(1, 1, 0), Color.Red);
             vertices[2] = new VertexPositionColor(new Vector3(-1, -1, 0), Color.Green);
-
-            vertexBuffer = new VertexBuffer(GraphicsDevice, typeof(VertexPositionColor),
+            vertices[3] = new VertexPositionColor(new Vector3(1, -1, 0), Color.Yellow);
+            vertexBuffer = new VertexBuffer(GraphicsDevice, typeof(VertexPositionTexture),
                 vertices.Length, BufferUsage.None);
-            vertexBuffer.SetData(vertices);
+            */
 
-            effect = new BasicEffect(GraphicsDevice);
+            worldRotation = Matrix.Identity;
+            worldTranslation = Matrix.Identity;            
 
             base.Initialize();
         }
@@ -60,6 +155,9 @@ namespace _3dMadness
             spriteBatch = new SpriteBatch(GraphicsDevice);
 
             // TODO: use this.Content to load your game content here
+            RasterizerState rs = new RasterizerState();
+            rs.CullMode = CullMode.None;
+            GraphicsDevice.RasterizerState = rs;
         }
 
         /// <summary>
@@ -84,6 +182,19 @@ namespace _3dMadness
 
             // TODO: Add your update logic here
 
+            // Translate the matrix
+            KeyboardState keyboardState = Keyboard.GetState();
+            if (keyboardState.IsKeyDown(Keys.Left))
+                worldTranslation *= Matrix.CreateTranslation(-0.01f, 0f, 0f);
+            if (keyboardState.IsKeyDown(Keys.Right))
+                worldTranslation *= Matrix.CreateTranslation(0.01f, 0f, 0f);
+
+            // Rotate the matrix
+            //worldRotation *= Matrix.CreateRotationY(MathHelper.PiOver4 / 60); // Rotate around Y
+            worldRotation *= Matrix.CreateFromYawPitchRoll(MathHelper.PiOver4 / 60, 
+                MathHelper.PiOver4 / 120, 
+                MathHelper.PiOver4 / 120);
+
             base.Update(gameTime);
         }
 
@@ -96,21 +207,26 @@ namespace _3dMadness
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
             // TODO: Add your drawing code here
-            GraphicsDevice.SetVertexBuffer(vertexBuffer);
-
-            // Set object and camera info
-            effect.World = Matrix.Identity;
-            effect.View = camera.View;
-            effect.Projection = camera.Projection;
-            effect.VertexColorEnabled = true;
-
-            // Begin effect and draw for each pass
-            foreach (EffectPass pass in effect.CurrentTechnique.Passes)
+            for (int i = 0; i < 6; i++)
             {
-                pass.Apply();
+                GraphicsDevice.SetVertexBuffer(vertexBuffer[i]);
 
-                GraphicsDevice.DrawUserPrimitives<VertexPositionColor>(PrimitiveType.TriangleStrip, 
-                    vertices, 0, 1);
+                // Set object and camera info
+                effect[i].World = worldRotation * worldTranslation; // this would scale the Matrix: * Matrix.CreateScale(0.25f);
+                effect[i].View = camera.View;
+                effect[i].Projection = camera.Projection;
+                //effect.VertexColorEnabled = true; // For VertexPositionColor
+                effect[i].Texture = texture[i];
+                effect[i].TextureEnabled = true;
+
+                // Begin effect and draw for each pass
+                foreach (EffectPass pass in effect[i].CurrentTechnique.Passes)
+                {
+                    pass.Apply();
+
+                    GraphicsDevice.DrawUserPrimitives<VertexPositionTexture>(PrimitiveType.TriangleStrip,
+                        vertices[i], 0, 2);
+                }
             }
 
             base.Draw(gameTime);
